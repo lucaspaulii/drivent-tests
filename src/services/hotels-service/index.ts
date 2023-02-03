@@ -1,4 +1,5 @@
 import { notFoundError } from '@/errors';
+import { paymentRequiredError } from '@/errors/payment-required-error';
 import enrollmentRepository from '@/repositories/enrollment-repository';
 import hotelRepository from '@/repositories/hotels-repository';
 import ticketRepository from '@/repositories/ticket-repository';
@@ -8,31 +9,44 @@ import httpStatus from 'http-status';
 async function verifyUserEnrollmentAndPaidTicket(userId: number) {
   const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
 
-  if (!enrollment) throw notFoundError();
+  if (!enrollment) {
+    throw notFoundError();
+  };
 
   const ticket = await ticketRepository.findTicketByEnrollmentId(enrollment.id);
 
-  if (!ticket) throw notFoundError;
+  if (!ticket) {
+    throw notFoundError();
+  };
 
-  if (ticket.status === 'RESERVED') throw httpStatus.PAYMENT_REQUIRED;
+  if (ticket.status === 'RESERVED' || ticket.TicketType.includesHotel === false) {
+    throw paymentRequiredError();
+  };
 }
 
 async function getAllHotels(userId: number): Promise<Hotel[]> {
-  verifyUserEnrollmentAndPaidTicket(userId);
+  await verifyUserEnrollmentAndPaidTicket(userId);
 
   const hotels = await hotelRepository.findAll();
 
-  if (!hotels) throw notFoundError();
+  if (!hotels) {
+    throw notFoundError();
+  }
+  if (hotels.length === 0) {
+    throw notFoundError();
+  }
 
   return hotels;
 }
 
 async function getRoomsByHotelId(userId: number, hotelId: number) {
-  verifyUserEnrollmentAndPaidTicket(userId);
+  await verifyUserEnrollmentAndPaidTicket(userId);
 
   const hotelWithRooms = await hotelRepository.findRoomsByHotelId(hotelId);
 
-  if (!hotelWithRooms) throw notFoundError();
+  if (!hotelWithRooms) {
+    throw notFoundError();
+  }
 
   return hotelWithRooms;
 }

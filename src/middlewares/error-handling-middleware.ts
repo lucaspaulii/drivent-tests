@@ -32,6 +32,14 @@ export function handleApplicationErrors(err: ApplicationError | Error, _req: Req
       message: err.message,
     });
   }
+  
+  if (err.name == "PaymentRequiredError") {
+      return res.sendStatus(httpStatus.PAYMENT_REQUIRED);
+  }
+    
+ 
+
+  
 
   /* eslint-disable-next-line no-console */
   console.error(err.name);
